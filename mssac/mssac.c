@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	if (argc == optind) {
 		fprintf(stderr, "\n");
 		fprintf(stderr, "Usage:   mssac [options] input.fasta\n\n");
-		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort, divsufsort, ssort [ksa]\n");
+		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort, divsufsort, ssort, dc3 [ksa]\n");
 		fprintf(stderr, "         -x        do not regard a NULL as a sentinel\n");
 		fprintf(stderr, "\n");
 		return 1;
@@ -120,11 +120,11 @@ int main(int argc, char *argv[])
 			ksa_sa(s, SA, l + 1, 7);
 			SA_checksum(l, SA + 1);
 			free(SA); free(s);
-		} else if (algo == 1 || algo == 4) { // qsufsort or ssort
+		} else if (algo == 1 || algo == 4 || algo == 5) { // qsufsort, ssort or dc3
 			int i, *tmp;
-			tmp = (int*)malloc(sizeof(int) * (l + 1));
+			tmp = (int*)malloc(sizeof(int) * (l + 3));
 			for (i = 0; i < l; ++i) tmp[i] = s[i] + 1;
-			tmp[l] = 0;
+			tmp[l] = tmp[l+1] = tmp[l+2] = 0; // required by dc3
 			free(s);
 			SA = (int*)malloc(sizeof(int) * (l + 1));
 			if (algo == 1) {
@@ -133,6 +133,9 @@ int main(int argc, char *argv[])
 			} else if (algo == 4) {
 				ssort(tmp, SA);
 				SA_checksum(l, tmp + 1);
+			} else if (algo == 5) {
+				suffixArray(tmp, SA, l, 6);
+				SA_checksum(l, SA);
 			}
 			free(SA); free(tmp);
 		} else if (algo == 2 || algo == 3) { // sais or divsufsort
