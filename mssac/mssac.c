@@ -10,12 +10,13 @@ KSEQ_INIT(gzFile, gzread)
 
 #define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 
-int ksa_sa(const unsigned char *T, int *SA, int n, int k);
-int sais_int(const int *T, int *SA, int n, int k);
-int sais(const unsigned char *T, int *SA, int n);
-void suffixsort(int *x, int *p, int n, int k, int l);
-int divsufsort(const unsigned char *T, int *SA, int n);
-int ssort(int a[], int s[]);
+int ksa_sa(const unsigned char *T, int *SA, int n, int k); // ksa, based on old sais
+int sais_int(const int *T, int *SA, int n, int k); // sais
+int sais(const unsigned char *T, int *SA, int n); // sais
+void suffixsort(int *x, int *p, int n, int k, int l); // qsufsort
+int divsufsort(const unsigned char *T, int *SA, int n); // divsufsort
+int ssort(int a[], int s[]); // ssort
+void suffixArray(int* s, int* SA, int n, int K); // dc3
 
 unsigned char seq_nt6_table[128];
 void seq_char2nt6(int l, unsigned char *s);
