@@ -17,6 +17,7 @@ void suffixsort(int *x, int *p, int n, int k, int l); // qsufsort
 int divsufsort(const unsigned char *T, int *SA, int n); // divsufsort
 int ssort(int a[], int s[]); // ssort
 void suffixArray(int* s, int* SA, int n, int K); // dc3
+void SA_IS(unsigned char *s, int *SA, int n, int K, int cs); // the original SA-IS algorithm
 
 unsigned char seq_nt6_table[128];
 void seq_char2nt6(int l, unsigned char *s);
@@ -41,6 +42,7 @@ int main(int argc, char *argv[])
 				else if (strcmp(optarg, "divsufsort") == 0) algo = 3;
 				else if (strcmp(optarg, "ssort") == 0) algo = 4;
 				else if (strcmp(optarg, "dc3") == 0) algo = 5;
+				else if (strcmp(optarg, "is") == 0) algo = 6;
 				else {
 					fprintf(stderr, "(EE) Unknown algorithm.\n");
 					return 1;
@@ -52,7 +54,7 @@ int main(int argc, char *argv[])
 	if (argc == optind) {
 		fprintf(stderr, "\n");
 		fprintf(stderr, "Usage:   mssac [options] input.fasta\n\n");
-		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort, divsufsort, ssort, dc3 [ksa]\n");
+		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort, divsufsort, ssort, dc3, is [ksa]\n");
 		fprintf(stderr, "         -x        do not regard a NULL as a sentinel\n");
 		fprintf(stderr, "\n");
 		return 1;
@@ -113,11 +115,12 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	} else { // A NULL is regarded as an ordinary symbol
-		if (algo == 0) { // ksa
+		if (algo == 0 || algo == 6) { // ksa or is
 			int i;
 			for (i = 0; i < l; ++i) ++s[i];
-			SA = (int*)malloc(sizeof(int) * l);
-			ksa_sa(s, SA, l + 1, 7);
+			SA = (int*)malloc(sizeof(int) * (l + 1));
+			if (algo == 0) ksa_sa(s, SA, l + 1, 7);
+			else SA_IS(s, SA, l + 1, 7, 1);
 			SA_checksum(l, SA + 1);
 			free(SA); free(s);
 		} else if (algo == 1 || algo == 4 || algo == 5) { // qsufsort, ssort or dc3
@@ -139,9 +142,9 @@ int main(int argc, char *argv[])
 			}
 			free(SA); free(tmp);
 		} else if (algo == 2 || algo == 3) { // sais or divsufsort
-			SA = (int*)malloc(sizeof(int) * l);
+			SA = (int*)malloc(sizeof(int) * (l + 1));
 			if (algo == 2) sais(s, SA, l);
-			else divsufsort(s, SA, l);
+			else if (algo == 3) divsufsort(s, SA, l);
 			SA_checksum(l, SA);
 			free(SA); free(s);
 		}
