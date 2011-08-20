@@ -8,7 +8,7 @@ KSEQ_INIT(gzFile, gzread)
 
 #define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 
-int sais(const unsigned char *T, int *SA, int n, int k);
+int ksa_sa(const unsigned char *T, int *SA, int n, int k);
 int sais2_int(const int *T, int *SA, int n, int k);
 void suffixsort(int *x, int *p, int n, int k, int l);
 
@@ -26,13 +26,13 @@ int main(int argc, char *argv[])
 	clock_t t = clock();
 
 	if (argc == 1) {
-		fprintf(stderr, "Usage: mssac input.fasta [ sais | sais2 | qsufsort ]\n");
+		fprintf(stderr, "Usage: mssac input.fasta [ ksa | sais | qsufsort ]\n");
 		return 1;
 	}
 	if (argc > 2) {
-		if (strcmp(argv[2], "sais") == 0) algo = 0;
+		if (strcmp(argv[2], "ksa") == 0) algo = 0;
 		else if (strcmp(argv[2], "qsufsort") == 0) algo = 1;
-		else if (strcmp(argv[2], "sais2") == 0) algo = 2;
+		else if (strcmp(argv[2], "sais") == 0) algo = 2;
 		else {
 			fprintf(stderr, "(EE) Unknown algorithm.\n");
 			return 1;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 	t = clock();
 	if (algo == 0) {
 		SA = (int*)malloc(sizeof(int) * l);
-		sais(s, SA, l, 6);
+		ksa_sa(s, SA, l, 6);
 		SA_checksum(l, SA);
 		free(SA); free(s);
 	} else if (algo == 1 || algo == 2) {
