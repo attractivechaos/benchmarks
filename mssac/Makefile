@@ -1,7 +1,7 @@
 CC=			gcc
 CFLAGS=		-g -Wall -O2
 DFLAGS=	
-OBJS=		ksa.o sais.o divsufsort.o qsufsort.o
+OBJS=		ksa.o sais.o divsufsort.o qsufsort.o ssort.o
 PROG=		mssac
 INCLUDES=
 LIBS=		-lz

@@ -15,6 +15,7 @@ int sais_int(const int *T, int *SA, int n, int k);
 int sais(const unsigned char *T, int *SA, int n);
 void suffixsort(int *x, int *p, int n, int k, int l);
 int divsufsort(const unsigned char *T, int *SA, int n);
+int ssort(int a[], int s[]);
 
 unsigned char seq_nt6_table[128];
 void seq_char2nt6(int l, unsigned char *s);
@@ -37,6 +38,7 @@ int main(int argc, char *argv[])
 				else if (strcmp(argv[2], "qsufsort") == 0) algo = 1;
 				else if (strcmp(argv[2], "sais") == 0) algo = 2;
 				else if (strcmp(argv[2], "divsufsort") == 0) algo = 3;
+				else if (strcmp(argv[2], "ssort") == 0) algo = 4;
 				else {
 					fprintf(stderr, "(EE) Unknown algorithm.\n");
 					return 1;
@@ -48,7 +50,7 @@ int main(int argc, char *argv[])
 	if (argc == optind) {
 		fprintf(stderr, "\n");
 		fprintf(stderr, "Usage:   mssac [options] input.fasta\n\n");
-		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort, divsufsort [ksa]\n");
+		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort, divsufsort, ssort [ksa]\n");
 		fprintf(stderr, "         -x        do not regard a NULL as a sentinel\n");
 		fprintf(stderr, "\n");
 		return 1;
@@ -82,11 +84,12 @@ int main(int argc, char *argv[])
 			ksa_sa(s, SA, l, 6);
 			SA_checksum(l, SA);
 			free(SA); free(s);
-		} else if (algo == 1 || algo == 2) { // sais or qsufsort
+		} else if (algo == 1 || algo == 2 || algo == 4) { // sais or qsufsort
 			int i, *tmp, k = 0;
 			tmp = (int*)malloc(sizeof(int) * (l + 1));
 			for (i = 0; i < l; ++i)
 				tmp[i] = s[i]? n_sentinels + s[i] : ++k;
+			tmp[l] = 0;
 			free(s);
 			SA = (int*)malloc(sizeof(int) * (l + 1));
 			if (algo == 1) { // qsufsort
@@ -95,6 +98,9 @@ int main(int argc, char *argv[])
 			} else if (algo == 2) { // sais
 				sais_int(tmp, SA, l, n_sentinels + 6);
 				SA_checksum(l, SA);
+			} else if (algo == 4) { // ssort
+				ssort(tmp, SA);
+				SA_checksum(l, tmp + 1);
 			}
 			free(SA); free(tmp);
 		} else {
@@ -109,14 +115,20 @@ int main(int argc, char *argv[])
 			ksa_sa(s, SA, l + 1, 7);
 			SA_checksum(l, SA + 1);
 			free(SA); free(s);
-		} else if (algo == 1) { // qsufsort
+		} else if (algo == 1 || algo == 4) { // qsufsort or ssort
 			int i, *tmp;
 			tmp = (int*)malloc(sizeof(int) * (l + 1));
-			for (i = 0; i < l; ++i) tmp[i] = s[i];
+			for (i = 0; i < l; ++i) tmp[i] = s[i] + 1;
+			tmp[l] = 0;
 			free(s);
 			SA = (int*)malloc(sizeof(int) * (l + 1));
-			suffixsort(tmp, SA, l, 6, 0);
-			SA_checksum(l, SA + 1);
+			if (algo == 1) {
+				suffixsort(tmp, SA, l, 7, 1);
+				SA_checksum(l, SA + 1);
+			} else if (algo == 4) {
+				ssort(tmp, SA);
+				SA_checksum(l, tmp + 1);
+			}
 			free(SA); free(tmp);
 		} else if (algo == 2 || algo == 3) { // sais or divsufsort
 			SA = (int*)malloc(sizeof(int) * l);
