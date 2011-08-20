@@ -490,21 +490,21 @@ sais_main(const void *T, sais_index_type *SA,
 /*---------------------------------------------------------------------------*/
 
 int
-sais2(const unsigned char *T, int *SA, int n) {
+sais(const unsigned char *T, int *SA, int n) {
   if((T == NULL) || (SA == NULL) || (n < 0)) { return -1; }
   if(n <= 1) { if(n == 1) { SA[0] = 0; } return 0; }
   return sais_main(T, SA, 0, n, UCHAR_SIZE, sizeof(unsigned char), 0);
 }
 
 int
-sais2_int(const int *T, int *SA, int n, int k) {
+sais_int(const int *T, int *SA, int n, int k) {
   if((T == NULL) || (SA == NULL) || (n < 0) || (k <= 0)) { return -1; }
   if(n <= 1) { if(n == 1) { SA[0] = 0; } return 0; }
   return sais_main(T, SA, 0, n, k, sizeof(int), 0);
 }
 
 int
-sais2_bwt(const unsigned char *T, unsigned char *U, int *A, int n) {
+sais_bwt(const unsigned char *T, unsigned char *U, int *A, int n) {
   int i, pidx;
   if((T == NULL) || (U == NULL) || (A == NULL) || (n < 0)) { return -1; }
   if(n <= 1) { if(n == 1) { U[0] = T[0]; } return n; }
@@ -518,7 +518,7 @@ sais2_bwt(const unsigned char *T, unsigned char *U, int *A, int n) {
 }
 
 int
-sais2_int_bwt(const int *T, int *U, int *A, int n, int k) {
+sais_int_bwt(const int *T, int *U, int *A, int n, int k) {
   int i, pidx;
   if((T == NULL) || (U == NULL) || (A == NULL) || (n < 0) || (k <= 0)) { return -1; }
   if(n <= 1) { if(n == 1) { U[0] = T[0]; } return n; }

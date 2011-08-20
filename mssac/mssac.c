@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <zlib.h>
@@ -10,7 +11,8 @@ KSEQ_INIT(gzFile, gzread)
 #define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 
 int ksa_sa(const unsigned char *T, int *SA, int n, int k);
-int sais2_int(const int *T, int *SA, int n, int k);
+int sais_int(const int *T, int *SA, int n, int k);
+int sais(const unsigned char *T, int *SA, int n);
 void suffixsort(int *x, int *p, int n, int k, int l);
 
 unsigned char seq_nt6_table[128];
@@ -23,25 +25,34 @@ int main(int argc, char *argv[])
 {
 	kseq_t *seq;
 	gzFile fp;
-	int *SA, l = 0, max = 0, algo = 0, n_sentinels = 0;
+	int *SA, c, l = 0, max = 0, algo = 0, n_sentinels = 0, has_sentinel = 1;
 	uint8_t *s = 0;
 	clock_t t = clock();
 
-	if (argc == 1) {
-		fprintf(stderr, "Usage: mssac input.fasta [ ksa | sais | qsufsort ]\n");
-		return 1;
-	}
-	if (argc > 2) {
-		if (strcmp(argv[2], "ksa") == 0) algo = 0;
-		else if (strcmp(argv[2], "qsufsort") == 0) algo = 1;
-		else if (strcmp(argv[2], "sais") == 0) algo = 2;
-		else {
-			fprintf(stderr, "(EE) Unknown algorithm.\n");
-			return 1;
+	while ((c = getopt(argc, argv, "a:x")) >= 0) {
+		switch (c) {
+			case 'a':
+				if (strcmp(argv[2], "ksa") == 0) algo = 0;
+				else if (strcmp(argv[2], "qsufsort") == 0) algo = 1;
+				else if (strcmp(argv[2], "sais") == 0) algo = 2;
+				else {
+					fprintf(stderr, "(EE) Unknown algorithm.\n");
+					return 1;
+				}
+				break;
+			case 'x': has_sentinel = 0; break;
 		}
 	}
+	if (argc == optind) {
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Usage:   mssac [options] input.fasta\n\n");
+		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort [ksa]\n");
+		fprintf(stderr, "         -x        do not regard a NULL as a sentinel (for sais only)\n");
+		fprintf(stderr, "\n");
+		return 1;
+	}
 
-	fp = gzopen(argv[1], "r");
+	fp = gzopen(argv[optind], "r");
 	seq = kseq_init(fp);
 	while (kseq_read(seq) >= 0) {
 		if (l + (seq->seq.l + 1) * 2 >= max) {
@@ -67,7 +78,7 @@ int main(int argc, char *argv[])
 		ksa_sa(s, SA, l, 6);
 		SA_checksum(l, SA);
 		free(SA); free(s);
-	} else if (algo == 1 || algo == 2) {
+	} else if (has_sentinel && (algo == 1 || algo == 2)) {
 		int i, *tmp, k = 0;
 		tmp = (int*)malloc(sizeof(int) * (l + 1));
 		for (i = 0; i < l; ++i)
@@ -78,10 +89,15 @@ int main(int argc, char *argv[])
 			suffixsort(tmp, SA, l, n_sentinels + 6, 1);
 			SA_checksum(l, SA + 1);
 		} else if (algo == 2) { // algo == 2
-			sais2_int(tmp, SA, l, n_sentinels + 6);
+			sais_int(tmp, SA, l, n_sentinels + 6);
 			SA_checksum(l, SA);
 		}
 		free(SA); free(tmp);
+	} else if (!has_sentinel && algo == 2) {
+		SA = (int*)malloc(sizeof(int) * l);
+		sais(s, SA, l);
+		SA_checksum(l, SA);
+		free(SA); free(s);
 	}
 	fprintf(stderr, "(MM) Constructed suffix array in %.3f seconds.\n", (double)(clock() - t) / CLOCKS_PER_SEC);
 
