@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "\n");
 		fprintf(stderr, "Usage:   mssac [options] input.fasta\n\n");
 		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort [ksa]\n");
-		fprintf(stderr, "         -x        do not regard a NULL as a sentinel (for sais only)\n");
+		fprintf(stderr, "         -x        do not regard a NULL as a sentinel\n");
 		fprintf(stderr, "\n");
 		return 1;
 	}
@@ -55,8 +55,8 @@ int main(int argc, char *argv[])
 	fp = gzopen(argv[optind], "r");
 	seq = kseq_init(fp);
 	while (kseq_read(seq) >= 0) {
-		if (l + (seq->seq.l + 1) * 2 >= max) {
-			max = l + (seq->seq.l + 1) * 2 + 1;
+		if (l + (seq->seq.l + 1) * 2 + 1 >= max) {
+			max = l + (seq->seq.l + 1) * 2 + 2;
 			kroundup32(max);
 			s = realloc(s, max);
 		}
@@ -68,35 +68,52 @@ int main(int argc, char *argv[])
 		l += seq->seq.l + 1;
 		n_sentinels += 2;
 	}
+	s[l] = 0;
 	kseq_destroy(seq);
 	gzclose(fp);
 	fprintf(stderr, "(MM) Read %d symbols in %.3f seconds.\n", l, (double)(clock() - t) / CLOCKS_PER_SEC);
 
 	t = clock();
-	if (has_sentinel) {
-		if (algo == 0) {
+	if (has_sentinel) { // A NULL is regarded a sentinel
+		if (algo == 0) { // ksa
 			SA = (int*)malloc(sizeof(int) * l);
 			ksa_sa(s, SA, l, 6);
 			SA_checksum(l, SA);
 			free(SA); free(s);
-		} else if (has_sentinel && (algo == 1 || algo == 2)) {
+		} else if (has_sentinel && (algo == 1 || algo == 2)) { // sais or qsufsort
 			int i, *tmp, k = 0;
 			tmp = (int*)malloc(sizeof(int) * (l + 1));
 			for (i = 0; i < l; ++i)
 				tmp[i] = s[i]? n_sentinels + s[i] : ++k;
 			free(s);
 			SA = (int*)malloc(sizeof(int) * (l + 1));
-			if (algo == 1) {
+			if (algo == 1) { // qsufsort
 				suffixsort(tmp, SA, l, n_sentinels + 6, 1);
 				SA_checksum(l, SA + 1);
-			} else if (algo == 2) { // algo == 2
+			} else if (algo == 2) { // sais
 				sais_int(tmp, SA, l, n_sentinels + 6);
 				SA_checksum(l, SA);
 			}
 			free(SA); free(tmp);
 		}
-	} else {
-		if (algo == 2) {
+	} else { // A NULL is regarded as an ordinary symbol
+		if (algo == 0) { // ksa
+			int i;
+			for (i = 0; i < l; ++i) ++s[i];
+			SA = (int*)malloc(sizeof(int) * l);
+			ksa_sa(s, SA, l + 1, 7);
+			SA_checksum(l, SA + 1);
+			free(SA); free(s);
+		} else if (algo == 1) { // qsufsort
+			int i, *tmp;
+			tmp = (int*)malloc(sizeof(int) * (l + 1));
+			for (i = 0; i < l; ++i) tmp[i] = s[i];
+			free(s);
+			SA = (int*)malloc(sizeof(int) * (l + 1));
+			suffixsort(tmp, SA, l, 6, 0);
+			SA_checksum(l, SA + 1);
+			free(SA); free(tmp);
+		} else if (algo == 2) { // sais
 			SA = (int*)malloc(sizeof(int) * l);
 			sais(s, SA, l);
 			SA_checksum(l, SA);
