@@ -14,6 +14,7 @@ int ksa_sa(const unsigned char *T, int *SA, int n, int k);
 int sais_int(const int *T, int *SA, int n, int k);
 int sais(const unsigned char *T, int *SA, int n);
 void suffixsort(int *x, int *p, int n, int k, int l);
+int divsufsort(const unsigned char *T, int *SA, int n);
 
 unsigned char seq_nt6_table[128];
 void seq_char2nt6(int l, unsigned char *s);
@@ -35,6 +36,7 @@ int main(int argc, char *argv[])
 				if (strcmp(argv[2], "ksa") == 0) algo = 0;
 				else if (strcmp(argv[2], "qsufsort") == 0) algo = 1;
 				else if (strcmp(argv[2], "sais") == 0) algo = 2;
+				else if (strcmp(argv[2], "divsufsort") == 0) algo = 3;
 				else {
 					fprintf(stderr, "(EE) Unknown algorithm.\n");
 					return 1;
@@ -46,7 +48,7 @@ int main(int argc, char *argv[])
 	if (argc == optind) {
 		fprintf(stderr, "\n");
 		fprintf(stderr, "Usage:   mssac [options] input.fasta\n\n");
-		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort [ksa]\n");
+		fprintf(stderr, "Options: -a STR    algorithm: ksa, sais, qsufsort, divsufsort [ksa]\n");
 		fprintf(stderr, "         -x        do not regard a NULL as a sentinel\n");
 		fprintf(stderr, "\n");
 		return 1;
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
 			ksa_sa(s, SA, l, 6);
 			SA_checksum(l, SA);
 			free(SA); free(s);
-		} else if (has_sentinel && (algo == 1 || algo == 2)) { // sais or qsufsort
+		} else if (algo == 1 || algo == 2) { // sais or qsufsort
 			int i, *tmp, k = 0;
 			tmp = (int*)malloc(sizeof(int) * (l + 1));
 			for (i = 0; i < l; ++i)
@@ -95,6 +97,9 @@ int main(int argc, char *argv[])
 				SA_checksum(l, SA);
 			}
 			free(SA); free(tmp);
+		} else {
+			fprintf(stderr, "(EE) The selected algorithm cannot construct SA for strings with multiple sentinels.\n");
+			return 1;
 		}
 	} else { // A NULL is regarded as an ordinary symbol
 		if (algo == 0) { // ksa
@@ -113,9 +118,10 @@ int main(int argc, char *argv[])
 			suffixsort(tmp, SA, l, 6, 0);
 			SA_checksum(l, SA + 1);
 			free(SA); free(tmp);
-		} else if (algo == 2) { // sais
+		} else if (algo == 2 || algo == 3) { // sais or divsufsort
 			SA = (int*)malloc(sizeof(int) * l);
-			sais(s, SA, l);
+			if (algo == 2) sais(s, SA, l);
+			else divsufsort(s, SA, l);
 			SA_checksum(l, SA);
 			free(SA); free(s);
 		}
