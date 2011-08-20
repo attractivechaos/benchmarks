@@ -35,11 +35,12 @@ int main(int argc, char *argv[])
 	while ((c = getopt(argc, argv, "a:x")) >= 0) {
 		switch (c) {
 			case 'a':
-				if (strcmp(argv[2], "ksa") == 0) algo = 0;
-				else if (strcmp(argv[2], "qsufsort") == 0) algo = 1;
-				else if (strcmp(argv[2], "sais") == 0) algo = 2;
-				else if (strcmp(argv[2], "divsufsort") == 0) algo = 3;
-				else if (strcmp(argv[2], "ssort") == 0) algo = 4;
+				if (strcmp(optarg, "ksa") == 0) algo = 0;
+				else if (strcmp(optarg, "qsufsort") == 0) algo = 1;
+				else if (strcmp(optarg, "sais") == 0) algo = 2;
+				else if (strcmp(optarg, "divsufsort") == 0) algo = 3;
+				else if (strcmp(optarg, "ssort") == 0) algo = 4;
+				else if (strcmp(optarg, "dc3") == 0) algo = 5;
 				else {
 					fprintf(stderr, "(EE) Unknown algorithm.\n");
 					return 1;
@@ -85,12 +86,12 @@ int main(int argc, char *argv[])
 			ksa_sa(s, SA, l, 6);
 			SA_checksum(l, SA);
 			free(SA); free(s);
-		} else if (algo == 1 || algo == 2 || algo == 4) { // sais or qsufsort
+		} else if (algo == 1 || algo == 2 || algo == 4 || algo == 5) { // sais, qsufsort, ssort or dc3
 			int i, *tmp, k = 0;
-			tmp = (int*)malloc(sizeof(int) * (l + 1));
+			tmp = (int*)malloc(sizeof(int) * (l + 3));
 			for (i = 0; i < l; ++i)
 				tmp[i] = s[i]? n_sentinels + s[i] : ++k;
-			tmp[l] = 0;
+			tmp[l] = tmp[l+1] = tmp[l+2] = 0; // required by dc3
 			free(s);
 			SA = (int*)malloc(sizeof(int) * (l + 1));
 			if (algo == 1) { // qsufsort
@@ -102,6 +103,9 @@ int main(int argc, char *argv[])
 			} else if (algo == 4) { // ssort
 				ssort(tmp, SA);
 				SA_checksum(l, tmp + 1);
+			} else if (algo == 5) { // dc3
+				suffixArray(tmp, SA, l, n_sentinels + 5);
+				SA_checksum(l, SA);
 			}
 			free(SA); free(tmp);
 		} else {

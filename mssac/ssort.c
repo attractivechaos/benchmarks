@@ -261,19 +261,19 @@ ssort(int a[], int s[])
 	for(j=n=0; a[n]>0; n++)			/* find n */
 		if(a[n] > j)
 			j = a[n];		/* and max element */
-	if(a[n++]<0 || j>=n)
-		finish(2);
+	if(a[n++]<0 || j>=n) {
+		finish(2); }
 	p = malloc(n*sizeof(int));
-	if(p == 0)
-		finish(1);
+	if(p == 0) {
+		finish(1); }
 
 	for(i=0; i<n; i++)			/* (0) initialize */
 		p[i] = i | ORIG;
 
 	if(s) {					/* shared lengths */
 		q = malloc(n*sizeof(int));
-		if(q == 0)
-			finish(1);
+		if(q == 0) {
+			finish(1); }
 	}
 
 	for(h = 0; ; h = h==0? 1: 2*h) {
@@ -291,8 +291,8 @@ ssort(int a[], int s[])
 					break;
 
 			for(i=k; i<n; i++)	/* check input */
-				if(!(pl[i]&ORIG))
-					finish(2);
+				if(!(pl[i]&ORIG)) {
+					finish(2); }
 		}
 
 		for(i=n; --k>=0; ) {		/* (2) order */
