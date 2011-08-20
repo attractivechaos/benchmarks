@@ -73,31 +73,35 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "(MM) Read %d symbols in %.3f seconds.\n", l, (double)(clock() - t) / CLOCKS_PER_SEC);
 
 	t = clock();
-	if (algo == 0) {
-		SA = (int*)malloc(sizeof(int) * l);
-		ksa_sa(s, SA, l, 6);
-		SA_checksum(l, SA);
-		free(SA); free(s);
-	} else if (has_sentinel && (algo == 1 || algo == 2)) {
-		int i, *tmp, k = 0;
-		tmp = (int*)malloc(sizeof(int) * (l + 1));
-		for (i = 0; i < l; ++i)
-			tmp[i] = s[i]? n_sentinels + s[i] : ++k;
-		free(s);
-		SA = (int*)malloc(sizeof(int) * (l + 1));
-		if (algo == 1) {
-			suffixsort(tmp, SA, l, n_sentinels + 6, 1);
-			SA_checksum(l, SA + 1);
-		} else if (algo == 2) { // algo == 2
-			sais_int(tmp, SA, l, n_sentinels + 6);
+	if (has_sentinel) {
+		if (algo == 0) {
+			SA = (int*)malloc(sizeof(int) * l);
+			ksa_sa(s, SA, l, 6);
 			SA_checksum(l, SA);
+			free(SA); free(s);
+		} else if (has_sentinel && (algo == 1 || algo == 2)) {
+			int i, *tmp, k = 0;
+			tmp = (int*)malloc(sizeof(int) * (l + 1));
+			for (i = 0; i < l; ++i)
+				tmp[i] = s[i]? n_sentinels + s[i] : ++k;
+			free(s);
+			SA = (int*)malloc(sizeof(int) * (l + 1));
+			if (algo == 1) {
+				suffixsort(tmp, SA, l, n_sentinels + 6, 1);
+				SA_checksum(l, SA + 1);
+			} else if (algo == 2) { // algo == 2
+				sais_int(tmp, SA, l, n_sentinels + 6);
+				SA_checksum(l, SA);
+			}
+			free(SA); free(tmp);
 		}
-		free(SA); free(tmp);
-	} else if (!has_sentinel && algo == 2) {
-		SA = (int*)malloc(sizeof(int) * l);
-		sais(s, SA, l);
-		SA_checksum(l, SA);
-		free(SA); free(s);
+	} else {
+		if (algo == 2) {
+			SA = (int*)malloc(sizeof(int) * l);
+			sais(s, SA, l);
+			SA_checksum(l, SA);
+			free(SA); free(s);
+		}
 	}
 	fprintf(stderr, "(MM) Constructed suffix array in %.3f seconds.\n", (double)(clock() - t) / CLOCKS_PER_SEC);
 
