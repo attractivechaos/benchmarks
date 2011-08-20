@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <zlib.h>
 #include <time.h>
+#include <sys/resource.h>
 #include "kseq.h"
 KSEQ_INIT(gzFile, gzread)
 
@@ -16,6 +17,7 @@ unsigned char seq_nt6_table[128];
 void seq_char2nt6(int l, unsigned char *s);
 void seq_revcomp6(int l, unsigned char *s);
 uint32_t SA_checksum(int l, const int *s);
+double rssmem();
 
 int main(int argc, char *argv[])
 {
@@ -83,6 +85,9 @@ int main(int argc, char *argv[])
 	}
 	fprintf(stderr, "(MM) Constructed suffix array in %.3f seconds.\n", (double)(clock() - t) / CLOCKS_PER_SEC);
 
+#ifndef __linux__
+	fprintf(stderr, "(MM) Max RSS: %.3f MB\n", rssmem());
+#endif
 	return 0;
 }
 
@@ -124,4 +129,11 @@ uint32_t SA_checksum(int l, const int *s)
 	for (; s < end; ++s) h = (h << 5) - h + *s;
 	fprintf(stderr, "(MM) Computed SA X31 checksum in %.3f seconds (checksum = %x)\n", (double)(clock() - t) / CLOCKS_PER_SEC, h);
 	return h;
+}
+
+double rssmem() // not working in Linux
+{
+    struct rusage r;
+    getrusage(RUSAGE_SELF, &r);
+    return r.ru_maxrss / 1024.0 / 1024.0;
 }
