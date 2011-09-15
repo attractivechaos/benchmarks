@@ -1,0 +1,25 @@
+CPU:      2.53 GHz Intel Core 2 Duo
+Memory:   4 GB 1067 MHz
+OS:       Mac OS X 10.6.8
+GCC:      4.2.1
+GCC Opts: -g -O2 -Wall
+
+Other comments:
+
+ 1. CPU time and max RSS by "getrusage()".
+ 2. "CPU@1-$" is the CPU time with a single sentinel at the end.
+ 3. "CPU@n-$" is the CPU time with multiple sentinels.
+ 4. Simulated reads from human mitochondrial DNA. 10100000 symbols in total.
+
+=============================================================
+ Library      CPU@1-$ (sec)   Memory (MB)   CPU@n-$   Memory
+-------------------------------------------------------------
+ dc3          13.4            276.8         13.6      271.4
+ divsufsort    1.5             49.0          N/A        N/A
+ is            4.3             51.2          N/A        N/A
+ ksa           3.3             48.7          3.2       48.7    
+ qsufsort      3.9             87.3          5.1       87.3
+ sais          2.2             48.7          2.9       87.6
+ ssort        30.4            164.3         24.8      164.3
+=============================================================
+ 
