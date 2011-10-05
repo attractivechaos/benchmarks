@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <semaphore.h>
 
+// contact: attractor@live.co.uk
+
 typedef struct {
 	int n, m, type, start, step;
 	uint64_t *bits;
@@ -121,6 +123,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "Usage: lock_test [-t nThreads=%d] [-n size=%d] [-m repeat=%d] [-l lockType=%d]\n",
 			n_threads, w0.n, w0.m, w0.type);
 	fprintf(stderr, "Lock type: 0 for single-thread; 1 for gcc builtin; 2 for spin lock; 3 for pthread spin; 4 for mutex; 5 for semaphore; 6 for buffer+spin\n");
+	fprintf(stderr, "Note: I do not know if type 2 and 6 always give the correct results.\n");
 
 	w0.bits = (uint64_t*)calloc((w0.n + 63) / 64, 8);
 
