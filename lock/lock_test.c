@@ -19,7 +19,7 @@ static pthread_spinlock_t g_spin;
 #endif
 static pthread_mutex_t g_mutex;
 static sem_t g_sem;
-static uint8_t g_lock2;
+static volatile uint8_t g_lock2;
 
 void *worker(void *data)
 {
@@ -42,9 +42,8 @@ void *worker(void *data)
 			uint64_t x = slow_comp(i, w->n);
 			uint64_t *p = &w->bits[x>>6];
 			uint64_t y = 1LLU << (x & 0x3f);
-			while (!__sync_bool_compare_and_swap(&g_lock2, 0, 1)); // busy waiting
-			*p ^= y;
-			__sync_bool_compare_and_swap(&g_lock2, 1, 0);
+			while (!__sync_bool_compare_and_swap(&g_lock2, 0, 1)); *p ^= y; __sync_bool_compare_and_swap(&g_lock2, 1, 0);
+			//while (__sync_lock_test_and_set(&g_lock2, 1)); *p ^= y; __sync_lock_release(&g_lock2);
 		}
 	} else if (w->type == 3) { // pthread spin lock
 #ifdef __APPLE__
