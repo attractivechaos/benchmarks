@@ -7,6 +7,14 @@
 
 // contact: attractor@live.co.uk
 
+// http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Atomic-Builtins.html
+// http://stackoverflow.com/questions/1383363/is-my-spin-lock-implementation-correct-and-optimal
+// http://www.google.com/codesearch#calSvFpbfuI/trunk/trunk/manual-ptt/glibc-2.3.6/nptl/sysdeps/i386/pthread_spin_lock.c
+// http://www.alexonlinux.com/pthread-spinlocks
+// http://www.alexonlinux.com/pthread-mutex-vs-pthread-spinlock
+// http://www.alexonlinux.com/multithreaded-simple-data-type-access-and-atomic-variables
+// https://computing.llnl.gov/tutorials/pthreads/
+
 typedef struct {
 	int n, m, type, start, step;
 	uint64_t *bits;
@@ -43,7 +51,8 @@ void *worker(void *data)
 			uint64_t *p = &w->bits[x>>6];
 			uint64_t y = 1LLU << (x & 0x3f);
 			while (!__sync_bool_compare_and_swap(&g_lock2, 0, 1)); *p ^= y; __sync_bool_compare_and_swap(&g_lock2, 1, 0);
-			//while (__sync_lock_test_and_set(&g_lock2, 1)); *p ^= y; __sync_lock_release(&g_lock2);
+			//while (__sync_lock_test_and_set(&g_lock2, 1)); *p ^= y; __sync_lock_release(&g_lock2); // this is faster
+			//while (__sync_lock_test_and_set(&g_lock2, 1)) while (g_lock2); *p ^= y; __sync_lock_release(&g_lock2); // this is sometimes the fastest
 		}
 	} else if (w->type == 3) { // pthread spin lock
 #ifdef __APPLE__
