@@ -75,6 +75,28 @@ void *worker(void *data)
 			*p ^= y;
 			sem_post(&g_sem);
 		}
+	} else if (w->type == 6) { // buffering + spin
+		uint64_t *buf;
+		int z = 0, j;
+		buf = malloc(8 * 0x10000);
+		for (i = w->start, nm = (int64_t)w->n * w->m; i < nm; i += w->step) {
+			if (z == 0x10000) { // force to lock
+				while (!__sync_bool_compare_and_swap(&g_lock2, 0, 1));
+				for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
+				__sync_bool_compare_and_swap(&g_lock2, 1, 0);
+				z = 0;
+			}
+			if (z && __sync_bool_compare_and_swap(&g_lock2, 0, 1)) { // try to lock
+				for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
+				__sync_bool_compare_and_swap(&g_lock2, 1, 0);
+				z = 0;
+			}
+			buf[z++] = slow_comp(i, w->n);
+		}
+		while (!__sync_bool_compare_and_swap(&g_lock2, 0, 1));
+		for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
+		__sync_bool_compare_and_swap(&g_lock2, 1, 0);
+		free(buf);
 	}
 	return 0;
 }
@@ -98,7 +120,7 @@ int main(int argc, char *argv[])
 	}
 	fprintf(stderr, "Usage: lock_test [-t nThreads=%d] [-n size=%d] [-m repeat=%d] [-l lockType=%d]\n",
 			n_threads, w0.n, w0.m, w0.type);
-	fprintf(stderr, "Lock type: 0 for single-thread; 1 for gcc builtin; 2 for spin lock; 3 for pthread spin; 4 for mutex; 5 for semaphore\n");
+	fprintf(stderr, "Lock type: 0 for single-thread; 1 for gcc builtin; 2 for spin lock; 3 for pthread spin; 4 for mutex; 5 for semaphore; 6 for buffer+spin\n");
 
 	w0.bits = (uint64_t*)calloc((w0.n + 63) / 64, 8);
 
@@ -138,6 +160,7 @@ Linux2: 2.3  GHz AMD Opteron 8376; ?;          kernel 2.6.18; gcc 4.1.2; glibc 2
  Pthread spin      (N/A)         (N/A)      3.8/3.8+0.0   21.1/42.0+0.2    53.8/206 +0.5  ~40.5/203 +0.0
  Pthread mutex  7.5/7.5+0.0  ~182/66 +205   6.0/5.9+0.0   31.0/22.2+22.9  ~97.2/55.9+228  ~95.5/83.0+237
  Semaphore      ~85/55 +30    ~51/55 +41    5.5/5.4+0.0   46.0/30.4+38.4   ~133/76.4+342  ~98.8/57.2+248
+ Buffer+spin    5.5/5.4+0.0   4.1/7.6+0.0   5.0/5.0+0.0    3.0/5.9 +0.0     4.2/16.4+0.0   10.7/40.4+0.1
 =========================================================================================================
 * numbers with "~" are measured with a smaller -m and then scaled to -m100.
 * CPU time is taken from a couple of runs. Variance seems quite large, though.
