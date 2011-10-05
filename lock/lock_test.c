@@ -126,8 +126,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 /*
-OSX: 2.53 GHz Intel Core 2 Duo; Mac OS X 10.6.8; gcc 4.2.1
-Linux: 2.83 GHz Intel Xeon E5440; Debian 5.0; gcc 4.3.2; glibc 2.7
+OSX:    2.53 GHz Intel Core 2 Duo; Mac OS X 10.6.8;           gcc 4.2.1
+Linux:  2.83 GHz Intel Xeon E5440; Debian 5.0; kernel 2.6.27; gcc 4.3.2; glibc 2.7
+Linux2: 2.3  GHz AMD Opteron 8376; ?;          kernel 2.6.18; gcc 4.1.2; glibc 2.5
 =========================================================================================================
  Type              OSX-1         OSX-2        Linux-1        Linux-2          Linux-4         Linux2-4
 ---------------------------------------------------------------------------------------------------------
