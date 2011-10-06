@@ -107,6 +107,28 @@ void *worker(void *data)
 		for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
 		__sync_bool_compare_and_swap(&g_lock2, 1, 0);
 		free(buf);
+	} else if (w->type == 7) {
+		uint64_t *buf;
+		int z = 0, j;
+		buf = malloc(8 * 0x10000);
+		for (i = w->start, nm = (int64_t)w->n * w->m; i < nm; i += w->step) {
+			if (z == 0x10000) { // force to lock
+				pthread_mutex_lock(&g_mutex);
+				for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
+				pthread_mutex_unlock(&g_mutex);
+				z = 0;
+			}
+			if (z && pthread_mutex_trylock(&g_mutex) == 0) { // try to lock
+				for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
+				pthread_mutex_unlock(&g_mutex);
+				z = 0;
+			}
+			buf[z++] = slow_comp(i, w->n);
+		}
+		pthread_mutex_lock(&g_mutex);
+		for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
+		pthread_mutex_unlock(&g_mutex);
+		free(buf);
 	}
 	return 0;
 }
@@ -130,8 +152,8 @@ int main(int argc, char *argv[])
 	}
 	fprintf(stderr, "Usage: lock_test [-t nThreads=%d] [-n size=%d] [-m repeat=%d] [-l lockType=%d]\n",
 			n_threads, w0.n, w0.m, w0.type);
-	fprintf(stderr, "Lock type: 0 for single-thread; 1 for gcc builtin; 2 for spin lock; 3 for pthread spin; 4 for mutex; 5 for semaphore; 6 for buffer+spin\n");
-	fprintf(stderr, "Note: I do not know if type 2 and 6 always give the correct results.\n");
+	fprintf(stderr, "Lock type: 0 for single-thread; 1 for gcc builtin; 2 for spin lock; 3 for pthread spin; 4 for mutex;\n");
+	fprintf(stderr, "           5 for semaphore; 6 for buffer+spin; 7 for buffer+mutex\n");
 
 	w0.bits = (uint64_t*)calloc((w0.n + 63) / 64, 8);
 
@@ -172,6 +194,7 @@ Linux2: 2.3  GHz AMD Opteron 8376; ?;          kernel 2.6.18; gcc 4.1.2; glibc 2
  Pthread mutex  7.5/7.5+0.0  ~182/66 +205   6.0/5.9+0.0   31.0/22.2+22.9  ~97.2/55.9+228  ~95.5/83.0+237
  Semaphore      ~85/55 +30    ~51/55 +41    5.5/5.4+0.0   46.0/30.4+38.4   ~133/76.4+342  ~98.8/57.2+248
  Buffer+spin    5.5/5.4+0.0   4.1/7.6+0.0   5.0/5.0+0.0    3.0/5.9 +0.0     4.2/16.4+0.0   10.7/40.4+0.1
+ Buffer+spin    7.5/7.4+0.0   7.9/14 +0.1   5.7/5.7+0.0    3.8/7.6 +0.0     8.1/32.0+0.0
 =========================================================================================================
 * numbers with "~" are measured with a smaller -m and then scaled to -m100.
 * CPU time is taken from a couple of runs. Variance seems quite large, though.
