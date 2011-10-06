@@ -96,11 +96,13 @@ void *worker(void *data)
 				__sync_bool_compare_and_swap(&g_lock2, 1, 0);
 				z = 0;
 			}
+			/*
 			if (z && __sync_bool_compare_and_swap(&g_lock2, 0, 1)) { // try to lock
 				for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
 				__sync_bool_compare_and_swap(&g_lock2, 1, 0);
 				z = 0;
 			}
+			*/
 			buf[z++] = slow_comp(i, w->n);
 		}
 		while (!__sync_bool_compare_and_swap(&g_lock2, 0, 1));
@@ -114,11 +116,6 @@ void *worker(void *data)
 		for (i = w->start, nm = (int64_t)w->n * w->m; i < nm; i += w->step) {
 			if (z == 0x10000) { // force to lock
 				pthread_mutex_lock(&g_mutex);
-				for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
-				pthread_mutex_unlock(&g_mutex);
-				z = 0;
-			}
-			if (z && pthread_mutex_trylock(&g_mutex) == 0) { // try to lock
 				for (j = 0; j < z; ++j) w->bits[buf[j]>>6] ^= 1LLU << (buf[j]&0x3f);
 				pthread_mutex_unlock(&g_mutex);
 				z = 0;
@@ -193,8 +190,8 @@ Linux2: 2.3  GHz AMD Opteron 8376; ?;          kernel 2.6.18; gcc 4.1.2; glibc 2
  Pthread spin      (N/A)         (N/A)      3.8/3.8+0.0   21.1/42.0+0.2    53.8/206 +0.5  ~40.5/203 +0.0
  Pthread mutex  7.5/7.5+0.0  ~182/66 +205   6.0/5.9+0.0   31.0/22.2+22.9  ~97.2/55.9+228  ~95.5/83.0+237
  Semaphore      ~85/55 +30    ~51/55 +41    5.5/5.4+0.0   46.0/30.4+38.4   ~133/76.4+342  ~98.8/57.2+248
- Buffer+spin    5.5/5.4+0.0   4.1/7.6+0.0   5.0/5.0+0.0    3.0/5.9 +0.0     4.2/16.4+0.0   10.7/40.4+0.1
- Buffer+spin    7.5/7.4+0.0   7.9/14 +0.1   5.7/5.7+0.0    3.8/7.6 +0.0     8.1/32.0+0.0
+ Buffer+spin    1.3/1.3+0.0   0.7/1.3+0.0   1.2/1.2+0.0    0.7/1.4 +0.0     0.5/2.0 +0.0
+ Buffer+mutex   1.3/1.3+0.0   0.7/1.4+0.0   1.2/1.2+0.0    0.7/1.4 +0.0     0.5/1.5 +0.0
 =========================================================================================================
 * numbers with "~" are measured with a smaller -m and then scaled to -m100.
 * CPU time is taken from a couple of runs. Variance seems quite large, though.
